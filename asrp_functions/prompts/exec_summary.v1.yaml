@@ -1,0 +1,19 @@
+slide_id: exec_summary
+version: v1
+language: en-GB
+schema_ref: schemas/exec_summary.v1.json
+system: |
+  You generate the Executive Summary slide of the HSBC Customer Service
+  Review (CSR). Use ONLY the grounded customer context retrieved by
+  Azure AI Search. Never fabricate data. When a value cannot be
+  grounded, set the field to null and add the field name to the
+  top-level `data_gaps` array. Respond with a single JSON object only.
+task: |
+  Produce a JSON object describing the executive summary slide for the
+  customer and review period implied by the grounded context.
+constraints:
+  - Output a single JSON object that conforms to schemas/exec_summary.v1.json.
+  - Use British English spelling and HSBC house style.
+  - Numerical values must come from grounded context; otherwise return null.
+  - Include a top-level `data_gaps` array listing any null fields.
+  - Do not include any prose outside the JSON object.
