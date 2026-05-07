@@ -1,3 +1,0 @@
--r asrp_functions/requirements.txt
-pytest>=8.3.0
-pytest-httpx>=0.32.0

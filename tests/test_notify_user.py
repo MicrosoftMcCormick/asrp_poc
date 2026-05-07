@@ -8,7 +8,7 @@ import azure.functions as func
 import pytest
 from pytest_httpx import HTTPXMock
 
-from functions import notify_user as nu
+from asrp_functions.functions import notify_user as nu
 
 # Fields that MUST be the only keys posted to the Power Automate flow.
 _ALLOWED_BODY_KEYS = {

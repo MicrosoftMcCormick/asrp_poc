@@ -29,7 +29,7 @@ obj/
 .python_packages/
 
 # IDE / editor
-.vscode/
+
 .idea/
 *.swp
 .DS_Store

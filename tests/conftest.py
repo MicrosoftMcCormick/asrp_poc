@@ -59,13 +59,13 @@ def _no_sleep(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(_time, "sleep", lambda *_a, **_k: None)
     try:
-        from functions import generate_slide_description as _gsd
+        from asrp_functions.functions import generate_slide_description as _gsd
 
         monkeypatch.setattr(_gsd.time, "sleep", lambda *_a, **_k: None)
     except ImportError:  # pragma: no cover - module always present
         pass
     try:
-        from functions import notify_user as _nu
+        from asrp_functions.functions import notify_user as _nu
 
         monkeypatch.setattr(_nu.time, "sleep", lambda *_a, **_k: None)
     except ImportError:  # pragma: no cover

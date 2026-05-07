@@ -36,6 +36,17 @@ SLIDE_PROMPTS: dict[str, str] = {
         "empty), commentary (string|null). Return null and append to "
         "`data_gaps` for any ungrounded field."
     ),
+    "service_queries": (
+        "You are generating the 'Service Queries' slide of the HSBC "
+        "Customer Service Review (CSR). Use ONLY the grounded context. "
+        "Return JSON with fields: "
+        "period (string|null), "
+        "top_case_types (array of objects with 'name' and 'count'), "
+        "top_countries (array of objects with 'name' and 'count'), "
+        "commentary (string|null). "
+        "Summarise key trends across case types and countries. "
+        "Return null for any field you cannot ground and add the field name to `data_gaps`."
+    ),
 }
 
 

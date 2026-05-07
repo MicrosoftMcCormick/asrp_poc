@@ -11,30 +11,37 @@ Copilot Studio Agent calls these endpoints with a function key. All
 outbound Azure SDK calls use Managed Identity via :mod:`shared.auth`.
 """
 
+
 from __future__ import annotations
 
 import json
-from typing import Callable
+import logging
+from typing import Callable, TypeVar
 
 import azure.functions as func
 from pydantic import BaseModel, ValidationError
 
-from services.deck_builder import assemble_and_upload
-from services.openai_client import generate_slide_json
-from services.power_automate import dispatch_notification
-from services.prompts import get_slide_prompt
-from services.search import retrieve_grounding
-from shared.logging import get_logger
-from shared.models import (
-    AssembleDeckRequest,
-    AssembleDeckResponse,
-    ErrorResponse,
-    GenerateSlideRequest,
-    GenerateSlideResponse,
-    NotifyUserRequest,
-    NotifyUserResponse,
-    SlideDescription,
-)
+try:
+    from asrp_functions.services.deck_builder import assemble_and_upload
+    from asrp_functions.services.openai_client import generate_slide_json
+    from asrp_functions.services.power_automate import dispatch_notification
+    from asrp_functions.services.prompts import get_slide_prompt
+    from asrp_functions.services.search import retrieve_grounding
+    from asrp_functions.shared.logging import get_logger
+    from asrp_functions.shared.models import (
+        AssembleDeckRequest,
+        AssembleDeckResponse,
+        ErrorResponse,
+        GenerateSlideRequest,
+        GenerateSlideResponse,
+        NotifyUserRequest,
+        NotifyUserResponse,
+        SlideDescription,
+    )
+except Exception:
+    logging.exception("FUNCTION_APP_IMPORT_FAILURE")
+    raise
+
 
 logger = get_logger(__name__)
 
@@ -61,7 +68,12 @@ def _error_response(
     )
 
 
-def _parse_body[T: BaseModel](
+
+from typing import TypeVar
+
+T = TypeVar("T", bound=BaseModel)
+
+def _parse_body(
     req: func.HttpRequest, model_cls: type[T]
 ) -> T | func.HttpResponse:
     try:
@@ -207,7 +219,7 @@ def _assemble_deck_impl(req: func.HttpRequest) -> func.HttpResponse:
         {gap for s in parsed.slides for gap in s.data_gaps}
     )
 
-    from shared.config import get_settings
+    from asrp_functions.shared.config import get_settings
 
     response = AssembleDeckResponse(
         customer_id=parsed.customer_id,

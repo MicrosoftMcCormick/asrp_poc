@@ -1,0 +1,44 @@
+{
+  "value": [
+    {
+      "@search.action": "upload",
+      "id": "cust-alpine-industries-service-queries-001",
+      "customer_id": "cust-alpine-industries",
+      "slide_id": "service_queries",
+      "content": "Customer Alpine Industries. Service Queries overview for the last 12 months. Total cases 1964. Largest case type is Payment Queries with 812 cases, followed by Account Management and Maintenance with 276, Channel with 228, Account Information with 191, Cash and Cheques with 142, Collection Services and Receivables with 103, Liquidity Management with 96, Card Services with 58, Client Admin with 31, Production Support with 17, Implementation Team with 6, Incident Management with 4. Highest-volume countries are India 338, Singapore 301, Netherlands 244, Hong Kong SAR 209, Malaysia 183, Philippines 141, Australia 118, Japan 96, United Kingdom NRFB 84, South Africa 73, Czech Republic 61, New Zealand 54, Israel 33, Indonesia 29, South Korea 22. Payment Queries dominate the service profile and are concentrated in India and Singapore. Excluded countries note applies: China, Egypt, Turkey, Saudi, HASE are not included.",
+      "metadata": "{\"period\":\"Apr 2025-Mar 2026\",\"top_case_type\":\"Payment Queries\",\"top_country\":\"India\",\"key_observation\":\"Payment queries and channel support make up most of the demand, driven by India and Singapore.\",\"excluded_countries\":[\"China\",\"Egypt\",\"Turkey\",\"Saudi\",\"HASE\"]}"
+    },
+    {
+      "@search.action": "upload",
+      "id": "cust-northstar-retail-service-queries-001",
+      "customer_id": "cust-northstar-retail",
+      "slide_id": "service_queries",
+      "content": "Customer Northstar Retail. Service Queries overview for the last 12 months. Total cases 1738. Largest case type is Payment Queries with 694 cases, followed by Channel with 255, Account Management and Maintenance with 232, Account Information with 181, Cash and Cheques with 146, Collection Services and Receivables with 71, Card Services with 59, Liquidity Management with 42, Client Admin with 26, Production Support with 18, Implementation Team with 9, Incident Management with 5. Highest-volume countries are Netherlands 287, India 266, Singapore 221, Malaysia 172, Hong Kong SAR 155, Mexico 112, Australia 95, Japan 87, South Africa 61, Czech Republic 58, New Zealand 43, Israel 36, Indonesia 33, South Korea 29, United Kingdom NRFB 24. Demand is led by payment queries and channel support, with the Netherlands and India driving the largest country volumes. Excluded countries note applies: China, Egypt, Turkey, Saudi, HASE are not included.",
+      "metadata": "{\"period\":\"Apr 2025-Mar 2026\",\"top_case_type\":\"Payment Queries\",\"top_country\":\"Netherlands\",\"key_observation\":\"Case demand is concentrated in payments and channels, with strong activity in the Netherlands and India.\",\"excluded_countries\":[\"China\",\"Egypt\",\"Turkey\",\"Saudi\",\"HASE\"]}"
+    },
+    {
+      "@search.action": "upload",
+      "id": "cust-orion-logistics-service-queries-001",
+      "customer_id": "cust-orion-logistics",
+      "slide_id": "service_queries",
+      "content": "Customer Orion Logistics. Service Queries overview for the last 12 months. Total cases 2142. Largest case type is Payment Queries with 901 cases, followed by Account Management and Maintenance with 301, Account Information with 240, Channel with 218, Cash and Cheques with 177, Collection Services and Receivables with 98, Card Services with 63, Liquidity Management with 55, Client Admin with 39, Production Support with 27, Implementation Team with 14, Incident Management with 9. Highest-volume countries are India 354, Netherlands 276, Singapore 248, Malaysia 191, Philippines 168, Hong Kong SAR 151, Mexico 126, Australia 97, Japan 88, South Africa 76, Czech Republic 67, New Zealand 41, Israel 25, Indonesia 24, South Korea 10, United Kingdom NRFB 26. Payment queries are the dominant driver, with a broad tail across account maintenance and account information. Excluded countries note applies: China, Egypt, Turkey, Saudi, HASE are not included.",
+      "metadata": "{\"period\":\"Apr 2025-Mar 2026\",\"top_case_type\":\"Payment Queries\",\"top_country\":\"India\",\"key_observation\":\"Large transactional support volumes are concentrated in India with a broad secondary spread across account servicing categories.\",\"excluded_countries\":[\"China\",\"Egypt\",\"Turkey\",\"Saudi\",\"HASE\"]}"
+    },
+    {
+      "@search.action": "upload",
+      "id": "cust-bluehaven-pharma-service-queries-001",
+      "customer_id": "cust-bluehaven-pharma",
+      "slide_id": "service_queries",
+      "content": "Customer Bluehaven Pharma. Service Queries overview for the last 12 months. Total cases 1496. Largest case type is Payment Queries with 588 cases, followed by Account Management and Maintenance with 219, Channel with 167, Account Information with 161, Cash and Cheques with 138, Collection Services and Receivables with 77, Card Services with 44, Liquidity Management with 39, Client Admin with 24, Production Support with 17, Implementation Team with 14, Incident Management with 8. Highest-volume countries are Singapore 244, India 232, Netherlands 205, Hong Kong SAR 148, Malaysia 123, Philippines 101, Australia 86, Japan 69, South Africa 55, Czech Republic 49, New Zealand 37, Israel 31, Indonesia 26, South Korea 19, United Kingdom NRFB 21, Mexico 50. Activity is concentrated in payment-related servicing, with Singapore and India accounting for the highest country volumes. Excluded countries note applies: China, Egypt, Turkey, Saudi, HASE are not included.",
+      "metadata": "{\"period\":\"Apr 2025-Mar 2026\",\"top_case_type\":\"Payment Queries\",\"top_country\":\"Singapore\",\"key_observation\":\"Operational demand is concentrated in payment servicing with the largest country volumes in Singapore and India.\",\"excluded_countries\":[\"China\",\"Egypt\",\"Turkey\",\"Saudi\",\"HASE\"]}"
+    },
+    {
+      "@search.action": "upload",
+      "id": "cust-cedar-energy-service-queries-001",
+      "customer_id": "cust-cedar-energy",
+      "slide_id": "service_queries",
+      "content": "Customer Cedar Energy. Service Queries overview for the last 12 months. Total cases 1875. Largest case type is Payment Queries with 742 cases, followed by Account Management and Maintenance with 258, Channel with 203, Account Information with 176, Cash and Cheques with 149, Collection Services and Receivables with 92, Card Services with 51, Liquidity Management with 47, Client Admin with 29, Production Support with 16, Implementation Team with 7, Incident Management with 5. Highest-volume countries are India 321, Netherlands 252, Singapore 237, Malaysia 164, Hong Kong SAR 137, Philippines 129, Mexico 111, Australia 83, Japan 71, South Africa 62, Czech Republic 52, New Zealand 38, Israel 30, Indonesia 27, South Korea 23, United Kingdom NRFB 31. Volumes are driven by payment queries with meaningful contributions from account management and channel-related issues. Excluded countries note applies: China, Egypt, Turkey, Saudi, HASE are not included.",
+      "metadata": "{\"period\":\"Apr 2025-Mar 2026\",\"top_case_type\":\"Payment Queries\",\"top_country\":\"India\",\"key_observation\":\"The service profile is dominated by payment queries, with India, the Netherlands and Singapore driving the largest case loads.\",\"excluded_countries\":[\"China\",\"Egypt\",\"Turkey\",\"Saudi\",\"HASE\"]}"
+    }
+  ]
+}

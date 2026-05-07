@@ -34,14 +34,15 @@ from dataclasses import dataclass
 from typing import Any, Iterable
 
 from pptx import Presentation
+from pptx.chart.data import CategoryChartData
 from pptx.presentation import Presentation as PresentationType
 from pptx.shapes.autoshape import Shape
 from pptx.slide import Slide
 from pptx.table import Table, _Cell
 from pptx.util import Emu
 
-from shared.logging import get_logger
-from shared.template_store import TemplateStore
+from asrp_functions.shared.logging import get_logger
+from asrp_functions.shared.template_store import TemplateStore
 
 logger = get_logger(__name__)
 
@@ -53,6 +54,17 @@ SLIDE_ID_TO_TEMPLATE_NAME: dict[str, str] = {
     "payments_stp_v1": "payments_analysis_stp",
     "query_analysis_v1": "query_analysis",
     "product_updates_v1": "product_updates",
+    "service_queries": "service_queries",
+}
+
+# Fallback text fragments used to locate a slide when the authored
+# template name is missing. All listed fragments must be present (case-
+# insensitive) on the candidate slide.
+SLIDE_ID_TEXT_FALLBACKS: dict[str, tuple[str, ...]] = {
+    "service_queries": (
+        "Global Volumes by Case Type",
+        "Global Volumes by Country",
+    ),
 }
 
 
@@ -102,13 +114,27 @@ class DeckAssembler:
                 continue
 
             handle = slide_index.get(template_name)
+
+            if handle is None and slide_id == "service_queries":
+                # FORCE slide 21 (index 20)
+                handle = _SlideHandle(
+                    name="forced_service_queries",
+                    slide=prs.slides[20]
+                )
+
             if handle is None:
-                logger.error(
-                    "deck_assembler.template_slide_missing",
+                handle = self._find_slide_by_text(prs, slide_id)
+                if handle is None:
+                    logger.error(
+                        "deck_assembler.template_slide_missing",
+                        extra={"slide_id": slide_id, "template_name": template_name},
+                    )
+                    failed_slide_ids.append(slide_id)
+                    continue
+                logger.info(
+                    "deck_assembler.slide_resolved_by_text",
                     extra={"slide_id": slide_id, "template_name": template_name},
                 )
-                failed_slide_ids.append(slide_id)
-                continue
 
             try:
                 self._populate_slide(handle.slide, slide_id, desc)
@@ -151,6 +177,8 @@ class DeckAssembler:
             self._populate_query_analysis(slide, desc, data_gaps)
         elif slide_id == "product_updates_v1":
             self._populate_product_updates(slide, desc, data_gaps)
+        elif slide_id == "service_queries":
+            self._populate_service_queries(slide, desc, data_gaps)
 
     # --- footprint_v1 ----------------------------------------------------
 
@@ -307,6 +335,166 @@ class DeckAssembler:
                     for u in updates
                 ],
             )
+
+    # --- service_queries (Slide 21) -------------------------------------
+
+    _SERVICE_QUERIES_CUSTOMER_TOKENS = (
+        "[MG / Legal Entity / Client / Account Name]",
+        "[MG/ Legal Entity / Client / Account Name]",
+    )
+    _SERVICE_QUERIES_PERIOD_TOKENS = (
+        "[MMM YYYY – MMM YYYY]",
+        "[MMM YYYY - MMM YYYY]",
+    )
+    _SERVICE_QUERIES_EXCLUSION_HINT = "exclud"
+
+    def _populate_service_queries(
+        self, slide: Slide, desc: dict[str, Any], data_gaps: set[str]
+    ) -> None:
+        content = desc.get("content") or {}
+        customer_id = desc.get("customer_id")
+        period = content.get("period")
+        top_case_types = content.get("top_case_types") or []
+        top_countries = content.get("top_countries") or []
+        commentary = content.get("commentary")
+
+        customer_label = "" if customer_id is None else str(customer_id)
+        period_label = "" if period is None else str(period)
+
+        # 1) Replace title placeholders in-place, preserving formatting.
+        replacements: dict[str, str] = {}
+        for tok in self._SERVICE_QUERIES_CUSTOMER_TOKENS:
+            replacements[tok] = customer_label
+        for tok in self._SERVICE_QUERIES_PERIOD_TOKENS:
+            replacements[tok] = period_label
+
+        self._replace_text_tokens(slide, replacements)
+
+        # 2) Replace chart data.
+        # Expected chart order on Slide 21:
+        #   first chart  -> Global Volumes by Case Type
+        #   second chart -> Global Volumes by Country
+        chart_shapes = [s for s in slide.shapes if getattr(s, "has_chart", False)]
+
+        if len(chart_shapes) >= 1 and top_case_types:
+            self._replace_chart_data(
+                chart_shapes[0],
+                categories=[str(c.get("name") or "") for c in top_case_types],
+                values=[c.get("count") for c in top_case_types],
+                series_name="Cases",
+            )
+
+        if len(chart_shapes) >= 2 and top_countries:
+            self._replace_chart_data(
+                chart_shapes[1],
+                categories=[str(c.get("name") or "") for c in top_countries],
+                values=[c.get("count") for c in top_countries],
+                series_name="Cases",
+            )
+
+        # 3) Commentary: only write into an obvious placeholder,
+        # never into headings like "Global Volumes by Case Type".
+        if commentary and "commentary" not in data_gaps:
+            target = self._find_commentary_textbox(
+                slide,
+                avoid_tokens=(
+                    *self._SERVICE_QUERIES_CUSTOMER_TOKENS,
+                    *self._SERVICE_QUERIES_PERIOD_TOKENS,
+                ),
+            )
+
+            if target is not None:
+                self._write_text(target, str(commentary))
+            else:
+                logger.warning(
+                    "deck_assembler.service_queries_no_commentary_target",
+                    extra={"slide_id": "service_queries"},
+                )
+
+    @staticmethod
+    def _replace_chart_data(
+        shape: Shape,
+        categories: list[Any],
+        values: list[Any],
+        series_name: str = "Cases",
+    ) -> None:
+        """Replace a chart's data via python-pptx ``chart.replace_data``.
+
+        ``None`` values are coerced to ``0`` so the chart renders without
+        injecting a marker. Mismatched lengths are truncated to the
+        shorter of the two inputs.
+        """
+        if not getattr(shape, "has_chart", False):
+            return
+        n = min(len(categories), len(values))
+        chart_data = CategoryChartData()
+        chart_data.categories = [str(c) for c in categories[:n]]
+        chart_data.add_series(
+            series_name,
+            [0 if v is None else v for v in values[:n]],
+        )
+        shape.chart.replace_data(chart_data)
+
+    @classmethod
+    def _replace_text_tokens(
+        cls, slide: Slide, replacements: dict[str, str]
+    ) -> None:
+        """In-place token replacement across all text frames on ``slide``."""
+        for shape in slide.shapes:
+            if not getattr(shape, "has_text_frame", False):
+                continue
+            for paragraph in shape.text_frame.paragraphs:
+                for run in paragraph.runs:
+                    text = run.text or ""
+                    new_text = text
+                    for token, value in replacements.items():
+                        if token in new_text:
+                            new_text = new_text.replace(token, value)
+                    if new_text != text:
+                        run.text = new_text
+
+    @classmethod
+    def _find_commentary_textbox(
+        cls, slide: Slide, avoid_tokens: tuple[str, ...] = ()
+    ) -> Shape | None:
+        """Find the first plausible commentary text box on ``slide``.
+
+        Skips charts, tables, the exclusion note, and any shape still
+        carrying a title token (so the title placeholder is never
+        overwritten with commentary).
+        """
+        for shape in slide.shapes:
+            if not getattr(shape, "has_text_frame", False):
+                continue
+            if getattr(shape, "has_chart", False) or getattr(shape, "has_table", False):
+                continue
+            text = (shape.text_frame.text or "").strip()
+            lowered = text.lower()
+            if cls._SERVICE_QUERIES_EXCLUSION_HINT in lowered:
+                continue
+            if any(tok in text for tok in avoid_tokens):
+                continue
+            return shape
+        return None
+
+    @classmethod
+    def _find_slide_by_text(
+        cls, prs: PresentationType, slide_id: str
+    ) -> _SlideHandle | None:
+        """Locate a slide by required text fragments when name lookup fails."""
+        fragments = SLIDE_ID_TEXT_FALLBACKS.get(slide_id)
+        if not fragments:
+            return None
+        needles = [f.lower() for f in fragments]
+        for slide in prs.slides:
+            haystack_parts: list[str] = []
+            for shape in slide.shapes:
+                if getattr(shape, "has_text_frame", False):
+                    haystack_parts.append(shape.text_frame.text or "")
+            haystack = "\n".join(haystack_parts).lower()
+            if any(n in haystack for n in needles):
+                return _SlideHandle(name=slide_id, slide=slide)
+        return None
 
     # -------------------------------------------------- chart-image embed
 
@@ -504,4 +692,5 @@ __all__ = [
     "DeckAssembler",
     "DATA_NOT_AVAILABLE_MARKER",
     "SLIDE_ID_TO_TEMPLATE_NAME",
+    "SLIDE_ID_TEXT_FALLBACKS",
 ]

@@ -14,7 +14,7 @@ import httpx
 import pytest
 from openai import APIConnectionError, APIStatusError
 
-from functions import generate_slide_description as gsd
+from asrp_functions.functions import generate_slide_description as gsd
 
 
 def _connection_error() -> APIConnectionError:
