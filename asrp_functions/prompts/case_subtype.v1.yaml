@@ -1,0 +1,38 @@
+slide_id: case_subtype
+version: v1
+language: en-GB
+schema_ref: schemas/case_subtype.v1.json
+system: |
+  You generate a single "case sub-type" slide of the HSBC Customer
+  Service Review (CSR). Use ONLY the grounded customer context
+  retrieved by Azure AI Search. Never fabricate data. When a value
+  cannot be grounded, set the field to null and add the field name to
+  the top-level `data_gaps` array. Respond with a single JSON object
+  only. Do not emit any prose outside the JSON object.
+task: |
+  Produce a JSON object describing one case-sub-type slide with a
+  single horizontal bar chart broken down by sub-type. Populate the
+  canonical envelope fields plus a `customer_id` field and a `content`
+  object containing `period`, `total`, `by_subtype` and `commentary`.
+  `by_subtype` is an ordered list of `{name, count, top_drivers}`
+  items, ranked by count descending. `top_drivers` is a list of 0-2
+  strings naming the dominant sub-drivers within that bucket (for
+  example `["Track Payments", "RFI Message Centre and Customer
+  Alerts"]` under "Additional Details"). Use only drivers grounded by
+  the customer context; otherwise leave `top_drivers` empty.
+constraints:
+  - "Output a single JSON object that conforms to schemas/case_subtype.v1.json."
+  - "Required top-level fields are slide_id, title, customer_id, content, and data_gaps."
+  - "slide_id must match the literal slide identifier supplied to you (for example 'case_subtype_s22')."
+  - "title is a short slide title (the deck template renders the customer name and period, so do not repeat them here)."
+  - "Use British English spelling and HSBC house style."
+  - "Numerical values must come from grounded context; otherwise return null."
+  - "Set customer_id to the grounded customer identifier."
+  - "content.period is a short human-readable range (for example 'Apr 2025-Mar 2026')."
+  - "content.by_subtype is ordered by count descending."
+  - "content.total is the sum of by_subtype counts when known; otherwise null."
+  - "Each by_subtype entry includes `top_drivers`: a list of up to two grounded sub-drivers within that bucket (or an empty list when none are grounded)."
+  - "content.commentary is a single string of 2-4 sentences (up to ~600 characters) written in an analytical, quantitative style modelled on the customer's own service-review commentary. The first sentence names the dominant sub-type and quantifies its share both in per cent and in absolute case count (for example: \"Additional Details remains the dominant sub-type, accounting for 28.6 per cent of total cases (247 of 864).\"). The second sentence quantifies the runner-up and the combined share of the top two. Where grounded, a third sentence names the leading driver within the dominant sub-type. Avoid vague phrases such as \"a large share\" — always cite the figure."
+  - "Include a top-level data_gaps array listing any null fields."
+  - "Do not include any prose outside the JSON object."
+  - "Do not wrap the JSON in markdown code fences."

@@ -69,6 +69,22 @@ class AssembleDeckRequest(_Base):
         min_length=1,
         description="Ordered list of validated per-slide JSON descriptions.",
     )
+    customer_name: str | None = Field(
+        default=None,
+        description=(
+            "Display name for the customer (e.g. 'Alpine Industries Ltd'). "
+            "Used to fill account-name placeholder tokens across every slide. "
+            "Falls back to ``customer_id`` when omitted."
+        ),
+    )
+    period: str | None = Field(
+        default=None,
+        description=(
+            "Reporting period label (e.g. 'Oct 2024 \u2013 Sep 2025'). "
+            "Used to fill the '[MMM YYYY \u2013 MMM YYYY]' placeholder tokens "
+            "across every slide. Optional; left blank when omitted."
+        ),
+    )
 
 
 class AssembleDeckResponse(_Base):

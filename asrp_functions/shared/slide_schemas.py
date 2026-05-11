@@ -168,11 +168,338 @@ class ProductUpdatesV1(SlideEnvelope):
     updates: list[ProductUpdate] = Field(default_factory=list)
 
 
+# --------------------------------------------------------- service_queries
+
+
+class ServiceQueriesItem(_StrictModel):
+    """A single (name, count) entry for case-type or country breakdowns."""
+
+    name: str | None = None
+    count: int | None = Field(default=None, ge=0)
+
+
+class ServiceQueriesContent(_StrictModel):
+    """Slide-21 content payload consumed by the deck assembler."""
+
+    period: str | None = None
+    total_cases: int | None = Field(default=None, ge=0)
+    top_case_types: list[ServiceQueriesItem] = Field(default_factory=list)
+    top_countries: list[ServiceQueriesItem] = Field(default_factory=list)
+    excluded_countries: list[str] | None = None
+    commentary: str | None = None
+
+
+class ServiceQueriesV1(SlideEnvelope):
+    SLIDE_ID: ClassVar[str] = "service_queries"
+
+    slide_id: Literal["service_queries"]
+    customer_id: str | None = None
+    content: ServiceQueriesContent | None = None
+
+
+# --------------------------------------------------------- volume_by_country
+#
+# A reusable family schema for slides that render a single horizontal
+# bar chart of payment / case volumes broken down by country, plus a
+# short commentary block. Each concrete slide gets its own ``slide_id``
+# (e.g. ``volume_by_country_s29``) so the orchestrator can ground the
+# data per slide via Azure AI Search, but every concrete id validates
+# against the same schema and is rendered by the same populator.
+
+
+# Concrete slide_ids in this family. The integer suffix is the 1-based
+# slide number in the HSBC CSR template.
+_VOLUME_BY_COUNTRY_SLIDE_IDS: tuple[str, ...] = (
+    "volume_by_country_s29",
+    "volume_by_country_s43",
+    "volume_by_country_s49",
+)
+
+
+class CountryCount(_StrictModel):
+    """A single ``(country, count)`` row used by the country chart."""
+
+    country: str | None = None
+    count: int | None = Field(default=None, ge=0)
+
+
+class VolumeByCountryContent(_StrictModel):
+    """Payload consumed by the volume-by-country populator."""
+
+    period: str | None = None
+    total: int | None = Field(default=None, ge=0)
+    by_country: list[CountryCount] = Field(default_factory=list)
+    commentary: str | None = None
+
+
+class VolumeByCountryV1(SlideEnvelope):
+    """Schema for every slide in the ``volume_by_country`` family.
+
+    ``slide_id`` is constrained by a regex rather than a ``Literal`` so
+    one schema class serves all nine concrete slides.
+    """
+
+    SLIDE_ID: ClassVar[str] = "volume_by_country"
+
+    slide_id: str = Field(..., pattern=r"^volume_by_country_s\d+$")
+    customer_id: str | None = None
+    content: VolumeByCountryContent | None = None
+
+
+# ------------------------------------------------------------- volume_by_type
+#
+# A reusable family schema for slides that render a clustered/stacked
+# bar chart of monthly payment / case volumes broken down into one or
+# more named series (e.g. STP vs non-STP, Repaired vs Rejected, case
+# types). Each concrete slide carries its own ``slide_id`` (e.g.
+# ``volume_by_type_s28``) so the orchestrator grounds per slide via
+# Azure AI Search, and every concrete id validates against the same
+# schema and is rendered by the same populator.
+
+
+_VOLUME_BY_TYPE_SLIDE_IDS: tuple[str, ...] = (
+    "volume_by_type_s28",
+    "volume_by_type_s31",
+    "volume_by_type_s32",
+    "volume_by_type_s34",
+    "volume_by_type_s42",
+)
+
+
+class VolumeByTypeSeries(_StrictModel):
+    """A single named series of monthly counts."""
+
+    name: str | None = None
+    values: list[int | None] = Field(default_factory=list)
+
+
+class VolumeByTypeContent(_StrictModel):
+    """Payload consumed by the volume-by-type populator.
+
+    ``categories`` is the shared category axis (typically months such as
+    ``"Oct'24"``). ``series`` is the list of named series; each series'
+    ``values`` array must align positionally with ``categories``.
+    """
+
+    period: str | None = None
+    total: int | None = Field(default=None, ge=0)
+    categories: list[str] = Field(default_factory=list)
+    series: list[VolumeByTypeSeries] = Field(default_factory=list)
+    commentary: str | None = None
+
+
+class VolumeByTypeV1(SlideEnvelope):
+    """Schema for every slide in the ``volume_by_type`` family."""
+
+    SLIDE_ID: ClassVar[str] = "volume_by_type"
+
+    slide_id: str = Field(..., pattern=r"^volume_by_type_s\d+$")
+    customer_id: str | None = None
+    content: VolumeByTypeContent | None = None
+
+
+# ------------------------------------------------------------- channel_mix
+#
+# Family for the doughnut-chart slides showing transaction volumes by
+# channel (e.g. SWIFT, FLU, H2H, HSBCnet, API). Each slide has one or
+# more doughnut charts; each chart represents one channel and slices
+# the volume by country code. Concrete slide_ids match
+# ``channel_mix_s\d+``.
+
+
+_CHANNEL_MIX_SLIDE_IDS: tuple[str, ...] = (
+    "channel_mix_s46",
+    "channel_mix_s47",
+    "channel_mix_s48",
+)
+
+
+class ChannelMixChannel(_StrictModel):
+    """One channel doughnut: a name and country-coded slices."""
+
+    name: str | None = None
+    by_country: list[CountryCount] = Field(default_factory=list)
+
+
+class ChannelMixContent(_StrictModel):
+    """Payload consumed by the channel-mix populator.
+
+    ``channels`` is the ordered list of channel doughnuts to render;
+    its length should match the number of doughnut chart shapes on the
+    target slide.
+    """
+
+    period: str | None = None
+    total: int | None = Field(default=None, ge=0)
+    channels: list[ChannelMixChannel] = Field(default_factory=list)
+    commentary: str | None = None
+
+
+class ChannelMixV1(SlideEnvelope):
+    """Schema for every slide in the ``channel_mix`` family."""
+
+    SLIDE_ID: ClassVar[str] = "channel_mix"
+
+    slide_id: str = Field(..., pattern=r"^channel_mix_s\d+$")
+    customer_id: str | None = None
+    content: ChannelMixContent | None = None
+
+
+# -------------------------------------------------------- volume_with_table
+#
+# Family for the priority-payment, ACH, DD and RTP slides that pair a
+# clustered bar chart (months as categories, currencies as series)
+# with a Top-5 counterparty table (name, location, value). One concrete
+# slide_id per template slide; all share this schema and populator.
+
+
+_VOLUME_WITH_TABLE_SLIDE_IDS: tuple[str, ...] = (
+    "volume_with_table_s33",
+    "volume_with_table_s35",
+    "volume_with_table_s36",
+    "volume_with_table_s37",
+    "volume_with_table_s38",
+    "volume_with_table_s39",
+    "volume_with_table_s40",
+    "volume_with_table_s41",
+)
+
+
+class CounterpartyRow(_StrictModel):
+    """A single row in the Top-5 counterparty table.
+
+    ``value`` is rendered verbatim into the third column. The caller
+    is responsible for formatting (e.g. ``"USD 12.4m"`` or ``"284"``)
+    so the same schema serves both volume and value variants.
+    """
+
+    name: str | None = None
+    location: str | None = None
+    value: str | None = None
+
+
+class VolumeWithTableContent(_StrictModel):
+    """Payload consumed by the volume-with-table populator."""
+
+    period: str | None = None
+    total: int | None = Field(default=None, ge=0)
+    chart_categories: list[str] = Field(default_factory=list)
+    chart_series: list[VolumeByTypeSeries] = Field(default_factory=list)
+    table_rows: list[CounterpartyRow] = Field(default_factory=list)
+    commentary: str | None = None
+
+
+class VolumeWithTableV1(SlideEnvelope):
+    """Schema for every slide in the ``volume_with_table`` family."""
+
+    SLIDE_ID: ClassVar[str] = "volume_with_table"
+
+    slide_id: str = Field(..., pattern=r"^volume_with_table_s\d+$")
+    customer_id: str | None = None
+    content: VolumeWithTableContent | None = None
+
+
+# ------------------------------------------------------------- case_subtype
+#
+# Family for the lone case-subtype bar slide (S22). Single chart, one
+# series, free-form text categories (e.g. ``Status / Trace``).
+
+
+_CASE_SUBTYPE_SLIDE_IDS: tuple[str, ...] = (
+    "case_subtype_s22",
+)
+
+
+class NamedCount(_StrictModel):
+    """Generic ``(name, count)`` row used by single-series bar charts."""
+
+    name: str | None = None
+    count: int | None = Field(default=None, ge=0)
+    # Optional dominant sub-drivers within this bucket (e.g. the
+    # leading case sub-types within the "Additional Details" case-type
+    # bucket). When populated, the case_subtype assembler renders these
+    # into the rotated annotation TextBoxes above the corresponding bar
+    # (up to two labels per bar, matching the HSBC template layout).
+    top_drivers: list[str] = Field(default_factory=list, max_length=2)
+
+
+class CaseSubtypeContent(_StrictModel):
+    """Payload consumed by the case-subtype populator."""
+
+    period: str | None = None
+    total: int | None = Field(default=None, ge=0)
+    by_subtype: list[NamedCount] = Field(default_factory=list)
+    commentary: str | None = None
+
+
+class CaseSubtypeV1(SlideEnvelope):
+    """Schema for the ``case_subtype`` family."""
+
+    SLIDE_ID: ClassVar[str] = "case_subtype"
+
+    slide_id: str = Field(..., pattern=r"^case_subtype_s\d+$")
+    customer_id: str | None = None
+    content: CaseSubtypeContent | None = None
+
+
+# --------------------------------------------------------- multi_chart_trend
+#
+# Family for slides whose body is one or more multi-series charts that
+# all share a category axis (months). Used for the bar+line trend
+# slides (S20, S25) and the dual stacked-bar channel slides (S45).
+# Each entry in ``charts`` populates the chart at the same on-slide
+# index. Series ordering must match the chart's authored series order
+# (bar series first then line series, etc.) because we rewrite cached
+# ``<c:ser>`` elements in document order.
+
+
+_MULTI_CHART_TREND_SLIDE_IDS: tuple[str, ...] = (
+    "multi_chart_trend_s20",
+    "multi_chart_trend_s25",
+    "multi_chart_trend_s45",
+)
+
+
+class MultiChartTrendChart(_StrictModel):
+    """One chart on a multi-chart trend slide."""
+
+    categories: list[str] = Field(default_factory=list)
+    series: list[VolumeByTypeSeries] = Field(default_factory=list)
+
+
+class MultiChartTrendContent(_StrictModel):
+    """Payload consumed by the multi-chart-trend populator."""
+
+    period: str | None = None
+    charts: list[MultiChartTrendChart] = Field(default_factory=list)
+    commentary: str | None = None
+
+
+class MultiChartTrendV1(SlideEnvelope):
+    """Schema for the ``multi_chart_trend`` family."""
+
+    SLIDE_ID: ClassVar[str] = "multi_chart_trend"
+
+    slide_id: str = Field(..., pattern=r"^multi_chart_trend_s\d+$")
+    customer_id: str | None = None
+    content: MultiChartTrendContent | None = None
+
+
 # --------------------------------------------------------------- registry
 
 
 SlideModel = (
-    FootprintV1 | PaymentsStpV1 | QueryAnalysisV1 | ProductUpdatesV1
+    FootprintV1
+    | PaymentsStpV1
+    | QueryAnalysisV1
+    | ProductUpdatesV1
+    | ServiceQueriesV1
+    | VolumeByCountryV1
+    | VolumeByTypeV1
+    | ChannelMixV1
+    | VolumeWithTableV1
+    | CaseSubtypeV1
+    | MultiChartTrendV1
 )
 
 _SCHEMA_REGISTRY: dict[str, type[SlideEnvelope]] = {
@@ -180,6 +507,13 @@ _SCHEMA_REGISTRY: dict[str, type[SlideEnvelope]] = {
     PaymentsStpV1.SLIDE_ID: PaymentsStpV1,
     QueryAnalysisV1.SLIDE_ID: QueryAnalysisV1,
     ProductUpdatesV1.SLIDE_ID: ProductUpdatesV1,
+    ServiceQueriesV1.SLIDE_ID: ServiceQueriesV1,
+    **{sid: VolumeByCountryV1 for sid in _VOLUME_BY_COUNTRY_SLIDE_IDS},
+    **{sid: VolumeByTypeV1 for sid in _VOLUME_BY_TYPE_SLIDE_IDS},
+    **{sid: ChannelMixV1 for sid in _CHANNEL_MIX_SLIDE_IDS},
+    **{sid: VolumeWithTableV1 for sid in _VOLUME_WITH_TABLE_SLIDE_IDS},
+    **{sid: CaseSubtypeV1 for sid in _CASE_SUBTYPE_SLIDE_IDS},
+    **{sid: MultiChartTrendV1 for sid in _MULTI_CHART_TREND_SLIDE_IDS},
 }
 
 
@@ -264,6 +598,27 @@ __all__ = [
     "QueryAnalysisV1",
     "ProductUpdate",
     "ProductUpdatesV1",
+    "ServiceQueriesItem",
+    "ServiceQueriesContent",
+    "ServiceQueriesV1",
+    "CountryCount",
+    "VolumeByCountryContent",
+    "VolumeByCountryV1",
+    "VolumeByTypeSeries",
+    "VolumeByTypeContent",
+    "VolumeByTypeV1",
+    "ChannelMixChannel",
+    "ChannelMixContent",
+    "ChannelMixV1",
+    "CounterpartyRow",
+    "VolumeWithTableContent",
+    "VolumeWithTableV1",
+    "NamedCount",
+    "CaseSubtypeContent",
+    "CaseSubtypeV1",
+    "MultiChartTrendChart",
+    "MultiChartTrendContent",
+    "MultiChartTrendV1",
     "SlideModel",
     "ValidationResult",
     "validate",

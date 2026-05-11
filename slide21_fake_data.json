@@ -9,7 +9,7 @@
       "metadata": "{\"period\":\"Apr 2025-Mar 2026\",\"top_case_type\":\"Payment Queries\",\"top_country\":\"India\",\"key_observation\":\"Payment queries and channel support make up most of the demand, driven by India and Singapore.\",\"excluded_countries\":[\"China\",\"Egypt\",\"Turkey\",\"Saudi\",\"HASE\"]}"
     },
     {
-      "@search.action": "upload",
+      "@search.action": "uplo
       "id": "cust-northstar-retail-service-queries-001",
       "customer_id": "cust-northstar-retail",
       "slide_id": "service_queries",

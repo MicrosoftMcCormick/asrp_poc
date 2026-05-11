@@ -1,0 +1,33 @@
+slide_id: volume_by_country
+version: v1
+language: en-GB
+schema_ref: schemas/volume_by_country.v1.json
+system: |
+  You generate a single "volume by country" slide of the HSBC Customer
+  Service Review (CSR). Use ONLY the grounded customer context
+  retrieved by Azure AI Search. Never fabricate data. When a value
+  cannot be grounded, set the field to null and add the field name to
+  the top-level `data_gaps` array. Respond with a single JSON object
+  only. Do not emit any prose outside the JSON object.
+task: |
+  Produce a JSON object describing one volume-by-country slide for the
+  customer and review period implied by the grounded context. Populate
+  the canonical envelope fields plus a `customer_id` field and a
+  `content` object containing `period`, `total`, `by_country` and
+  `commentary`. `by_country` is an ordered list of `{country, count}`
+  items, ranked by count descending.
+constraints:
+  - "Output a single JSON object that conforms to schemas/volume_by_country.v1.json."
+  - "Required top-level fields are slide_id, title, customer_id, content, and data_gaps."
+  - "slide_id must match the literal slide identifier supplied to you (for example 'volume_by_country_s29')."
+  - "title is a short slide title (the deck template renders the customer name and period, so do not repeat them here)."
+  - "Use British English spelling and HSBC house style."
+  - "Numerical values must come from grounded context; otherwise return null."
+  - "Set customer_id to the grounded customer identifier."
+  - "content.period is a short human-readable range (for example 'Apr 2025-Mar 2026')."
+  - "content.total is the sum of all by_country counts when known; otherwise null."
+  - "content.by_country lists every country present in the grounded data, ordered by count descending."
+  - "content.commentary is a single string of 2-4 analytical sentences (up to ~600 characters) modelled on the customer's own service-review commentary. Be quantitative: cite the total, the top-five share both in per cent and in absolute count (for example: \"The top five countries contribute 4,062 transactions, representing 78.4 per cent of total volume.\"), and the residual share carried by the remaining countries (for example: \"The remaining 14 countries account for 1,120 transactions (21.6 per cent), with an average of 80 transactions per country.\"). Where the data allows, add a sentence naming the leading country and its individual share. Avoid vague phrases such as \"a large share\" — always cite the figure."
+  - "Include a top-level data_gaps array listing any null fields."
+  - "Do not include any prose outside the JSON object."
+  - "Do not wrap the JSON in markdown code fences."

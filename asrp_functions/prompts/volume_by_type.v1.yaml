@@ -1,0 +1,36 @@
+slide_id: volume_by_type
+version: v1
+language: en-GB
+schema_ref: schemas/volume_by_type.v1.json
+system: |
+  You generate a single "volume by type" slide of the HSBC Customer
+  Service Review (CSR). Use ONLY the grounded customer context
+  retrieved by Azure AI Search. Never fabricate data. When a value
+  cannot be grounded, set the field to null and add the field name to
+  the top-level `data_gaps` array. Respond with a single JSON object
+  only. Do not emit any prose outside the JSON object.
+task: |
+  Produce a JSON object describing one volume-by-type slide for the
+  customer and review period implied by the grounded context. Populate
+  the canonical envelope fields plus a `customer_id` field and a
+  `content` object containing `period`, `total`, `categories`, `series`
+  and `commentary`. `categories` is the shared category axis (typically
+  monthly labels in chronological order). `series` is an ordered list
+  of named series; each series' `values` array must align positionally
+  with `categories` and have the same length.
+constraints:
+  - "Output a single JSON object that conforms to schemas/volume_by_type.v1.json."
+  - "Required top-level fields are slide_id, title, customer_id, content, and data_gaps."
+  - "slide_id must match the literal slide identifier supplied to you (for example 'volume_by_type_s28')."
+  - "title is a short slide title (the deck template renders the customer name and period, so do not repeat them here)."
+  - "Use British English spelling and HSBC house style."
+  - "Numerical values must come from grounded context; otherwise return null."
+  - "Set customer_id to the grounded customer identifier."
+  - "content.period is a short human-readable range (for example 'Apr 2025-Mar 2026')."
+  - "content.categories is an ordered list of axis labels (e.g. months in chronological order)."
+  - "content.series is an ordered list of {name, values}; every series must have len(values) == len(categories)."
+  - "content.total is the sum across all series and categories when known; otherwise null."
+  - "content.commentary is a single string of 2-4 analytical sentences (up to ~600 characters) modelled on the customer's own service-review commentary. Be quantitative: name the leading series and quantify its share both in per cent and in absolute total (for example: \"GBP is the leading currency, contributing 62.4 per cent of payments (£2.93 million of £4.69 million).\"). Add a sentence on the runner-up series with its per cent and absolute figure, and where the trend is informative call out the peak month or growth direction. Avoid vague phrases such as \"a large share\" — always cite the figure."
+  - "Include a top-level data_gaps array listing any null fields."
+  - "Do not include any prose outside the JSON object."
+  - "Do not wrap the JSON in markdown code fences."

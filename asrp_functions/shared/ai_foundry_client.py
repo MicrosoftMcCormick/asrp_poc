@@ -135,24 +135,29 @@ class AIFoundryClient:
         extra_system: str | None,
     ) -> dict[str, Any]:
         prompt = self._prompts.get(slide_id, prompt_version)
+        prompt_text = self._compose_prompt_text(prompt)
         data_source = self._build_data_source(
             customer_id=customer_id, slide_id=slide_id
         )
 
-        messages: list[dict[str, str]] = [{"role": "system", "content": prompt}]
+        messages: list[dict[str, str]] = [{"role": "system", "content": prompt_text}]
         if extra_system:
             messages.append({"role": "system", "content": extra_system})
         messages.append(
             {
                 "role": "user",
                 "content": (
-                    f"slide_id={slide_id}\n"
-                    f"customer_id={customer_id}\n"
-                    "Return a single JSON object that conforms to the "
-                    "slide schema. For any field that cannot be grounded "
-                    "in the retrieved context, return null and add the "
-                    "field name to the top-level `data_gaps` array. "
-                    "Do not fabricate values."
+                    f"Generate the {slide_id} slide for customer "
+                    f"{customer_id}. Use the retrieved customer context "
+                    "to populate every field defined by this slide's "
+                    "schema. Return a single JSON object that conforms "
+                    "to the slide schema. For any schema field that "
+                    "cannot be grounded in the retrieved context, return "
+                    "null and add the schema field name (only schema "
+                    "field names — never free-form descriptions) to the "
+                    "top-level `data_gaps` array. Do not list fields "
+                    "that are not part of this slide's schema. Do not "
+                    "fabricate values."
                 ),
             }
         )
@@ -161,6 +166,12 @@ class AIFoundryClient:
             model=self._settings.AZURE_OPENAI_DEPLOYMENT_NAME,
             response_format={"type": "json_object"},
             temperature=0,
+            # Some slides (multi-chart trend with 5 series x 12 months
+            # x 2 charts) emit ~1.5k completion tokens. Default caps
+            # have truncated JSON mid-array (finish_reason='length').
+            # 4096 is well within the model context budget for our
+            # ~5k-token system+grounding prompt and gives a safe margin.
+            max_tokens=4096,
             messages=messages,
             extra_body={"data_sources": [data_source]},
         )
@@ -198,12 +209,26 @@ class AIFoundryClient:
 
         try:
             description = json.loads(content)
-        except json.JSONDecodeError as exc:
-            # Re-raise as ValueError so the orchestration layer (not this
-            # client) decides retry semantics, while preserving cause.
-            raise ValueError(
-                f"AI Foundry returned non-JSON content for slide_id={slide_id!r}"
-            ) from exc
+        except json.JSONDecodeError:
+            # Some "On Your Data" responses wrap the JSON in a markdown
+            # code fence (```json ... ```). Strip a single fence and try
+            # again before declaring the response unparseable.
+            stripped = self._strip_code_fence(content)
+            try:
+                description = json.loads(stripped)
+            except json.JSONDecodeError as exc:
+                logger.error(
+                    "aoai.invalid_json_content",
+                    extra={
+                        "slide_id": slide_id,
+                        "customer_id": customer_id,
+                        "finish_reason": choice.finish_reason,
+                        "content_preview": (content or "")[:1000],
+                    },
+                )
+                raise ValueError(
+                    f"AI Foundry returned non-JSON content for slide_id={slide_id!r}"
+                ) from exc
 
         if not isinstance(description, dict):
             raise ValueError(
@@ -222,6 +247,51 @@ class AIFoundryClient:
         return {"description": description, "model_metadata": model_metadata}
 
     # ----------------------------------------------------------------- private
+
+    @staticmethod
+    def _strip_code_fence(content: str) -> str:
+        """Strip a leading/trailing markdown code fence from ``content``.
+
+        Handles ```` ```json `` and ```` ``` `` wrappers; returns the
+        inner text. Inputs without a fence are returned unchanged.
+        """
+        if not content:
+            return content
+        text = content.strip()
+        if not text.startswith("```"):
+            return text
+        # Drop the opening fence (and optional language tag).
+        first_newline = text.find("\n")
+        if first_newline == -1:
+            return text
+        text = text[first_newline + 1 :]
+        # Drop a trailing fence if present.
+        if text.rstrip().endswith("```"):
+            text = text.rstrip()[: -len("```")]
+        return text.strip()
+
+    @staticmethod
+    def _compose_prompt_text(prompt: Any) -> str:
+        """Render the Prompt model (or a raw string) into a single string.
+
+        Accepts either a :class:`shared.prompt_registry.Prompt` pydantic
+        model or a plain string so existing tests that stub the registry
+        with ``str`` returns continue to work.
+        """
+        if isinstance(prompt, str):
+            return prompt
+        system = getattr(prompt, "system", "") or ""
+        task = getattr(prompt, "task", "") or ""
+        constraints = getattr(prompt, "constraints", None) or []
+        parts: list[str] = []
+        if system:
+            parts.append(system.strip())
+        if task:
+            parts.append("Task:\n" + task.strip())
+        if constraints:
+            bullet_lines = "\n".join(f"- {c}" for c in constraints)
+            parts.append("Constraints:\n" + bullet_lines)
+        return "\n\n".join(parts) if parts else str(prompt)
 
     def _build_data_source(
         self, *, customer_id: str, slide_id: str
@@ -243,7 +313,7 @@ class AIFoundryClient:
                     f"slide_id eq '{slide_id}'"
                 ),
                 "in_scope": True,
-                "strictness": 5,
+                "strictness": 1,
                 "top_n_documents": 8,
             },
         }

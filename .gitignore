@@ -37,3 +37,17 @@ obj/
 # Logs / test output
 *.log
 out/
+
+# Local build/run artefacts
+func_pkg.zip
+*.pptx
+out_e2e/
+unzip_*/
+latest_deck_unzip/
+asrp_functions/shared/*.bak.py
+
+# Local debug payloads
+out_assemble.json
+out_generate.json
+dbg_*.json
+seed_preview.json

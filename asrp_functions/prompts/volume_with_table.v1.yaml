@@ -1,0 +1,36 @@
+slide_id: volume_with_table
+version: v1
+language: en-GB
+schema_ref: schemas/volume_with_table.v1.json
+system: |
+  You generate a single "volume with table" slide of the HSBC Customer
+  Service Review (CSR). Use ONLY the grounded customer context
+  retrieved by Azure AI Search. Never fabricate data. When a value
+  cannot be grounded, set the field to null and add the field name to
+  the top-level `data_gaps` array. Respond with a single JSON object
+  only. Do not emit any prose outside the JSON object.
+task: |
+  Produce a JSON object describing one volume-with-table slide. The
+  slide pairs a clustered bar chart (months as the category axis,
+  currencies as named series) with a Top-5 counterparty table whose
+  columns are {Name, Location, Value}. Populate the canonical envelope
+  fields plus a `customer_id` field and a `content` object containing
+  `period`, `total`, `chart_categories`, `chart_series`, `table_rows`
+  and `commentary`.
+constraints:
+  - "Output a single JSON object that conforms to schemas/volume_with_table.v1.json."
+  - "Required top-level fields are slide_id, title, customer_id, content, and data_gaps."
+  - "slide_id must match the literal slide identifier supplied to you (for example 'volume_with_table_s33')."
+  - "title is a short slide title (the deck template renders the customer name and period, so do not repeat them here)."
+  - "Use British English spelling and HSBC house style."
+  - "Numerical values must come from grounded context; otherwise return null."
+  - "Set customer_id to the grounded customer identifier."
+  - "content.period is a short human-readable range (for example 'Apr 2025-Mar 2026')."
+  - "content.chart_categories is an ordered list of axis labels (months in chronological order)."
+  - "content.chart_series is an ordered list of {name, values}; every series must have len(values) == len(chart_categories)."
+  - "content.table_rows is an ordered list of up to 5 entries with {name, location, value}; value is rendered as a string verbatim."
+  - "content.total is the grand total across the chart series when known; otherwise null."
+  - "content.commentary is a single string of 2-4 analytical sentences (up to ~600 characters) modelled on the customer's own service-review commentary. Quantify the top-five table rows' combined contribution in both per cent and absolute terms (for example: \"The top five beneficiaries contribute £2.93 million, representing 64.6 per cent of total volume.\"), then the residual share of the remaining counterparties (for example: \"The remaining 47 beneficiaries contribute £1.60 million, accounting for 35.4 per cent, with an average of £0.03 million per beneficiary.\"). Where the chart is informative, add a sentence on the peak month or the dominant series. Avoid vague phrases such as \"a large share\" — always cite the figure."
+  - "Include a top-level data_gaps array listing any null fields."
+  - "Do not include any prose outside the JSON object."
+  - "Do not wrap the JSON in markdown code fences."

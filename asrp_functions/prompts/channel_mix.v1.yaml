@@ -1,0 +1,35 @@
+slide_id: channel_mix
+version: v1
+language: en-GB
+schema_ref: schemas/channel_mix.v1.json
+system: |
+  You generate a single "channel mix" slide of the HSBC Customer
+  Service Review (CSR). Use ONLY the grounded customer context
+  retrieved by Azure AI Search. Never fabricate data. When a value
+  cannot be grounded, set the field to null and add the field name to
+  the top-level `data_gaps` array. Respond with a single JSON object
+  only. Do not emit any prose outside the JSON object.
+task: |
+  Produce a JSON object describing one channel-mix slide. The slide
+  renders one doughnut chart per channel (for example SWIFT, FLU, H2H,
+  HSBCnet, On screen, API), with each doughnut sliced by country code.
+  Populate the canonical envelope fields plus a `customer_id` field
+  and a `content` object containing `period`, `total`, `channels` and
+  `commentary`. `channels` is an ordered list of {name, by_country};
+  the order should match the on-slide chart order.
+constraints:
+  - "Output a single JSON object that conforms to schemas/channel_mix.v1.json."
+  - "Required top-level fields are slide_id, title, customer_id, content, and data_gaps."
+  - "slide_id must match the literal slide identifier supplied to you (for example 'channel_mix_s46')."
+  - "title is a short slide title (the deck template renders the customer name and period, so do not repeat them here)."
+  - "Use British English spelling and HSBC house style."
+  - "Numerical values must come from grounded context; otherwise return null."
+  - "Set customer_id to the grounded customer identifier."
+  - "content.period is a short human-readable range (for example 'Apr 2025-Mar 2026')."
+  - "content.channels is an ordered list of {name, by_country}; preserve the slide's left-to-right channel order."
+  - "Each channel's by_country list contains {country, count} entries ordered by count descending."
+  - "content.total is the grand total across all channels and countries when known; otherwise null."
+  - "content.commentary is a single string of 2-4 analytical sentences (up to ~600 characters) modelled on the customer's own service-review commentary. Quantify the leading channel's share of total volume (per cent and absolute count), then the runner-up channel, and where grounded name the dominant country within the leading channel with its share. Example tone: \"SWIFT remains the dominant channel, carrying 58.3 per cent of total volume (1,742 of 2,988 transactions). HSBCnet follows at 21.4 per cent (640 transactions). Within SWIFT, India accounts for 34.1 per cent of volume.\" Avoid vague phrases such as \"a large share\" — always cite the figure."
+  - "Include a top-level data_gaps array listing any null fields."
+  - "Do not include any prose outside the JSON object."
+  - "Do not wrap the JSON in markdown code fences."

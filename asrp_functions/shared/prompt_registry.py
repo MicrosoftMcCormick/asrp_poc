@@ -75,16 +75,38 @@ class PromptRegistry:
     def get(self, slide_id: str, version: str) -> Prompt:
         """Return the prompt for ``(slide_id, version)``.
 
+        Falls back to the slide's *family* prompt when an exact match
+        is not registered. A concrete slide_id of the shape
+        ``<family>_s<digits>`` (e.g. ``volume_by_country_s29``) resolves
+        to the family prompt (e.g. ``volume_by_country``) when that
+        family-level prompt is registered for ``version``. This lets
+        the per-slide prompt YAML serve every concrete slide in a
+        family without duplicating the prompt text.
+
         Raises:
-            PromptNotFoundError: if no matching prompt is registered.
+            PromptNotFoundError: if neither the concrete nor the
+                family prompt is registered.
         """
         key = (slide_id, version)
-        try:
-            return self._prompts[key]
-        except KeyError as exc:
-            raise PromptNotFoundError(
-                f"No prompt registered for slide_id={slide_id!r} version={version!r}"
-            ) from exc
+        prompt = self._prompts.get(key)
+        if prompt is not None:
+            return prompt
+
+        family = self._family_for(slide_id)
+        if family is not None:
+            family_prompt = self._prompts.get((family, version))
+            if family_prompt is not None:
+                return family_prompt
+
+        raise PromptNotFoundError(
+            f"No prompt registered for slide_id={slide_id!r} version={version!r}"
+        )
+
+    @staticmethod
+    def _family_for(slide_id: str) -> str | None:
+        """Return the family slide_id for a concrete ``<family>_s\\d+`` id."""
+        match = re.match(r"^(?P<family>.+)_s\d+$", slide_id)
+        return match.group("family") if match else None
 
     def list_slide_ids(self) -> list[str]:
         """Return the unique slide ids known to the registry, sorted."""

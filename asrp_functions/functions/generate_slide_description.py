@@ -232,9 +232,21 @@ def _handle(request: GenerateSlideRequest) -> GenerateSlideResponse:
             ),
         )
     except (APITimeoutError, APIConnectionError, RateLimitError, APIStatusError) as exc:
+        status_code = getattr(exc, "status_code", None)
+        body_text: str | None = None
+        try:
+            resp = getattr(exc, "response", None)
+            body_text = getattr(resp, "text", None) if resp is not None else None
+        except Exception:  # noqa: BLE001
+            body_text = None
         logger.error(
             "generate_slide_description.transient_failure",
-            extra={**log_ctx, "error_type": type(exc).__name__},
+            extra={
+                **log_ctx,
+                "error_type": type(exc).__name__,
+                "status_code": status_code,
+                "aoai_response_body": body_text,
+            },
         )
         return _failure_response(
             request=request, reason=f"azure_openai_unavailable: {type(exc).__name__}"
@@ -282,9 +294,21 @@ def _handle(request: GenerateSlideRequest) -> GenerateSlideResponse:
             ),
         )
     except (APITimeoutError, APIConnectionError, RateLimitError, APIStatusError) as exc:
+        status_code = getattr(exc, "status_code", None)
+        body_text: str | None = None
+        try:
+            resp = getattr(exc, "response", None)
+            body_text = getattr(resp, "text", None) if resp is not None else None
+        except Exception:  # noqa: BLE001
+            body_text = None
         logger.error(
             "generate_slide_description.strict_transient_failure",
-            extra={**log_ctx, "error_type": type(exc).__name__},
+            extra={
+                **log_ctx,
+                "error_type": type(exc).__name__,
+                "status_code": status_code,
+                "aoai_response_body": body_text,
+            },
         )
         return _failure_response(
             request=request,

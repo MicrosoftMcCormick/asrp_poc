@@ -17,9 +17,11 @@ from pathlib import Path
 import pytest
 
 # Make the Function App importable from the repo root.
-_FUNC_APP_ROOT = Path(__file__).resolve().parent.parent / "asrp_functions"
-if str(_FUNC_APP_ROOT) not in sys.path:
-    sys.path.insert(0, str(_FUNC_APP_ROOT))
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_FUNC_APP_ROOT = _REPO_ROOT / "asrp_functions"
+for _p in (_REPO_ROOT, _FUNC_APP_ROOT):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
 
 
 _REQUIRED_ENV: dict[str, str] = {

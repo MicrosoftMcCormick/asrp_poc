@@ -166,7 +166,10 @@ def _handle(request: AssembleDeckRequest) -> AssembleDeckResponse:
     # Step 4 — assemble. A catastrophic failure here means no deck.
     try:
         deck_bytes, assembler_failed_ids = _deck_assembler().assemble(
-            template_bytes, valid_slides
+            template_bytes,
+            valid_slides,
+            customer_name=request.customer_name,
+            period=request.period,
         )
     except Exception as exc:  # noqa: BLE001 - boundary handler
         logger.error(
